@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>پنل مدیریت - سامانه خدمات دانشجویی</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Vazirmatn', sans-serif;
+        }
+        .tab-active {
+            border-bottom: 3px solid #1E3A8A;
+            color: #1E3A8A;
+        }
+        .voice-recorder {
+            position: relative;
+        }
+        .recording-animation {
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+    <script>
+        // Security check - must be at the top of head
+        (function() {
+            const currentUser = JSON.parse(sessionStorage.getItem('currentUser') || 'null');
+            if (!currentUser || currentUser.role !== 'admin') {
+                window.location.href = '../index.html';
+                return;
+            }
+        })();
+    </script>
+</head>
+<body class="bg-slate-50 min-h-screen">
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center">
+                    <div class="bg-blue-100 w-10 h-10 rounded-full flex items-center justify-center ml-3">
+                        <i class="fas fa-graduation-cap text-blue-600"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold text-gray-900">پنل مدیریت</h1>
+                        <p class="text-sm text-gray-600">سامانه خدمات دانشجویی</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4 space-x-reverse">
+                    <div class="text-sm text-gray-600" id="userInfo"></div>
+                    <button onclick="logout()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition duration-300">
+                        <i class="fas fa-sign-out-alt ml-1"></i>
+                        خروج
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Tab Navigation -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
+        <nav class="flex space-x-8 space-x-reverse border-b">
+            <button onclick="switchTab('employees')" 
+                    class="tab-btn py-4 px-2 text-sm font-medium hover:text-blue-600 transition duration-300" 
+                    data-tab="employees">
+                <i class="fas fa-users ml-1"></i>
+                مدیریت کارمندان
+            </button>
+            <button onclick="switchTab('createTask')" 
+                    class="tab-btn py-4 px-2 text-sm font-medium hover:text-blue-600 transition duration-300" 
+                    data-tab="createTask">
+                <i class="fas fa-plus-circle ml-1"></i>
+                ایجاد تسک جدید
+            </button>
+            <button onclick="switchTab('overview')" 
+                    class="tab-btn py-4 px-2 text-sm font-medium hover:text-blue-600 transition duration-300" 
+                    data-tab="overview">
+                <i class="fas fa-chart-line ml-1"></i>
+                مشاهده کل تسک‌ها
+            </button>
+        </nav>
+    </div>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Employee Management Tab -->
+        <div id="employeesTab" class="tab-content hidden">
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-gray-900">مدیریت کارمندان</h2>
+                    <button onclick="showAddEmployeeModal()" 
+                            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition duration-300">
+                        <i class="fas fa-user-plus ml-1"></i>
+                        افزودن کارمند جدید
+                    </button>
+                </div>
+                <div id="employeesList" class="space-y-4">
+                    <!-- Employees will be loaded here -->
+                </div>
+            </div>
+        </div>
+        <!-- Create Task Tab -->
+        <div id="createTaskTab" class="tab-content hidden">
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-2xl font-bold text-gray-900 mb-6">ایجاد تسک جدید</h2>
+                <form id="createTaskForm" class="space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="taskTitle" class="block text-sm font-medium text-gray-700 mb-2">عنوان تسک</label>
+                            <input type="text" id="taskTitle" required
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                   placeholder="عنوان تسک را وارد کنید">
+                        </div>
+                        <div>
+                            <label for="taskAssignee" class="block text-sm font-medium text-gray-700 mb-2">واگذاری به</label>
+                            <select id="taskAssignee" required
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">انتخاب کارمند</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="taskPriority" class="block text-sm font-medium text-gray-700 mb-2">اولویت</label>
+                            <select id="taskPriority" required
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="low">کم</option>
+                                <option value="medium" selected>متوسط</option>
+                                <option value="high">زیاد</option>
+                                <option value="urgent">فوری</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="taskDeadline" class="block text-sm font-medium text-gray-700 mb-2">مهلت انجام</label>
+                            <input type="datetime-local" id="taskDeadline" required
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="taskDescription" class="block text-sm font-medium text-gray-700 mb-2">توضیحات تسک</label>
+                        <textarea id="taskDescription" rows="4" required
+                                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                  placeholder="توضیحات تفصیلی تسک را وارد کنید"></textarea>
+                    </div>
+
+                    <!-- Voice Recorder Section -->
+                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-6">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">ضبط دستورالعمل صوتی (اختیاری)</h3>
+                        <div class="flex items-center justify-center space-x-4 space-x-reverse">
+                            <button type="button" id="recordButton" onclick="toggleRecording()"
+                                    class="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-lg transition duration-300 flex items-center">
+                                <i class="fas fa-microphone ml-2"></i>
+                                شروع ضبط
+                            </button>
+                            <div id="recordingStatus" class="text-sm text-gray-600 hidden">
+                                <span id="recordingTime">00:00</span> / 02:00
+                            </div>
+                        </div>
+                        <div id="audioPreview" class="mt-4 hidden">
+                            <audio controls class="w-full">
+                                <source id="audioSource" type="audio/wav">
+                            </audio>
+                            <button type="button" onclick="clearRecording()" 
+                                    class="mt-2 text-red-600 hover:text-red-800 text-sm">
+                                <i class="fas fa-trash ml-1"></i>
+                                حذف ضبط
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- File Attachments -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">فایل‌های پیوست (اختیاری)</label>
+                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                            <input type="file" id="taskAttachments" multiple class="hidden" onchange="handleFileSelect(event)">
+                            <button type="button" onclick="document.getElementById('taskAttachments').click()"
+                                    class="text-blue-600 hover:text-blue-800">
+                                <i class="fas fa-cloud-upload-alt text-2xl mb-2"></i>
+                                <p>کلیک کنید یا فایل‌ها را بکشید</p>
+                            </button>
+                            <div id="attachmentsList" class="mt-4 text-right"></div>
+                        </div>
+                    </div>
+
+                    <button type="submit" 
+                            class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg transition duration-300 font-medium">
+                        <i class="fas fa-plus ml-2"></i>
+                        ایجاد تسک
+                    </button>
+                </form>
+            </div>
+        </div>
+        <!-- Overview Tab -->
+        <div id="overviewTab" class="tab-content hidden">
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-gray-900">مشاهده کل تسک‌ها</h2>
+                    <div class="flex space-x-4 space-x-reverse">
+                        <select id="statusFilter" onchange="filterTasks()" 
+                                class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">همه وضعیت‌ها</option>
+                            <option value="pending">در انتظار</option>
+                            <option value="in_progress">در حال انجام</option>
+                            <option value="completed">تکمیل شده</option>
+                            <option value="overdue">منقضی شده</option>
+                        </select>
+                        <select id="employeeFilter" onchange="filterTasks()"
+                                class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">همه کارمندان</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Statistics Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                    <div class="bg-blue-50 p-6 rounded-lg">
+                        <div class="flex items-center">
+                            <div class="bg-blue-500 p-3 rounded-full">
+                                <i class="fas fa-tasks text-white"></i>
+                            </div>
+                            <div class="mr-4">
+                                <p class="text-sm text-blue-600">کل تسک‌ها</p>
+                                <p class="text-2xl font-bold text-blue-900" id="totalTasks">0</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-yellow-50 p-6 rounded-lg">
+                        <div class="flex items-center">
+                            <div class="bg-yellow-500 p-3 rounded-full">
+                                <i class="fas fa-clock text-white"></i>
+                            </div>
+                            <div class="mr-4">
+                                <p class="text-sm text-yellow-600">در انتظار</p>
+                                <p class="text-2xl font-bold text-yellow-900" id="pendingTasks">0</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-green-50 p-6 rounded-lg">
+                        <div class="flex items-center">
+                            <div class="bg-green-500 p-3 rounded-full">
+                                <i class="fas fa-check-circle text-white"></i>
+                            </div>
+                            <div class="mr-4">
+                                <p class="text-sm text-green-600">تکمیل شده</p>
+                                <p class="text-2xl font-bold text-green-900" id="completedTasks">0</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-red-50 p-6 rounded-lg">
+                        <div class="flex items-center">
+                            <div class="bg-red-500 p-3 rounded-full">
+                                <i class="fas fa-exclamation-triangle text-white"></i>
+                            </div>
+                            <div class="mr-4">
+                                <p class="text-sm text-red-600">منقضی شده</p>
+                                <p class="text-2xl font-bold text-red-900" id="overdueTasks">0</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tasks Table -->
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">عنوان</th>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">کارمند</th>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">اولویت</th>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">وضعیت</th>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">مهلت</th>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">عملیات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tasksTableBody" class="bg-white divide-y divide-gray-200">
+                            <!-- Tasks will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Add Employee Modal -->
+    <div id="addEmployeeModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center">
+        <div class="bg-white rounded-lg p-6 w-full max-w-md">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">افزودن کارمند جدید</h3>
+            <form id="addEmployeeForm" class="space-y-4">
+                <div>
+                    <label for="empName" class="block text-sm font-medium text-gray-700 mb-1">نام کامل</label>
+                    <input type="text" id="empName" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                </div>
+                <div>
+                    <label for="empUsername" class="block text-sm font-medium text-gray-700 mb-1">نام کاربری</label>
+                    <input type="text" id="empUsername" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                </div>
+                <div>
+                    <label for="empPassword" class="block text-sm font-medium text-gray-700 mb-1">رمز عبور</label>
+                    <input type="password" id="empPassword" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                </div>
+                <div>
+                    <label for="empEmail" class="block text-sm font-medium text-gray-700 mb-1">ایمیل</label>
+                    <input type="email" id="empEmail" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                </div>
+                <div class="flex justify-end space-x-4 space-x-reverse pt-4">
+                    <button type="button" onclick="closeAddEmployeeModal()" 
+                            class="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">
+                        انصراف
+                    </button>
+                    <button type="submit" 
+                            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                        افزودن
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <script src="../config.js"></script>
+    <script>
+
+        // Global variables
+        let mediaRecorder;
+        let audioChunks = [];
+        let recordingTimer;
+        let recordingSeconds = 0;
+        let currentUser;
+        let employees = [];
+        let tasks = [];
+
+        // GitHub API Helper
+        class GitHubAPI {
+            static async getFile(path) {
+                try {
+                    const response = await fetch(`${GITHUB_CONFIG.apiUrl}/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${path}`, {
+                        headers: {
+                            'Authorization': `token ${GITHUB_CONFIG.token}`,
+                            'Accept': 'application/vnd.github.v3+json'
+                        }
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('فایل یافت نشد');
+                    }
+
+                    const data = await response.json();
+                    return { content: JSON.parse(atob(data.content)), sha: data.sha };
+                } catch (error) {
+                    console.error('خطا در دریافت فایل:', error);
+                    return this.getFallbackData(path);
+                }
+            }
+
+            static async updateFile(path, content, sha, message) {
+                try {
+                    const response = await fetch(`${GITHUB_CONFIG.apiUrl}/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${path}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Authorization': `token ${GITHUB_CONFIG.token}`,
+                            'Accept': 'application/vnd.github.v3+json',
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            message: message,
+                            content: btoa(JSON.stringify(content, null, 2)),
+                            sha: sha
+                        })
+                    });
+
+                    return response.ok;
+                } catch (error) {
+                    console.error('خطا در بروزرسانی فایل:', error);
+                    return false;
+                }
+            }
+
+            static getFallbackData(path) {
+                if (path === 'database/users.json') {
+                    return {
+                        content: {
+                            users: [
+                                {
+                                    id: 1,
+                                    username: "admin",
+                                    password: "admin123",
+                                    role: "admin",
+                                    name: "مدیر سیستم",
+                                    email: "admin@company.com"
+                                },
+                                {
+                                    id: 2,
+                                    username: "employee1",
+                                    password: "emp123",
+                                    role: "employee",
+                                    name: "احمد محمدی",
+                                    email: "ahmad@company.com"
+                                },
+                                {
+                                    id: 3,
+                                    username: "employee2",
+                                    password: "emp123",
+                                    role: "employee",
+                                    name: "فاطمه احمدی",
+                                    email: "fateme@company.com"
+                                }
+                            ]
+                        },
+                        sha: null
+                    };
+                } else if (path === 'database/tasks.json') {
+                    return {
+                        content: {
+                            tasks: [
+                                {
+                                    id: 1,
+                                    title: "بررسی مدارک دانشجویان جدید",
+                                    description: "بررسی و تایید مدارک ورودی دانشجویان جدید ترم جاری",
+                                    assignedTo: 2,
+                                    createdBy: 1,
+                                    priority: "high",
+                                    status: "pending",
+                                    deadline: "2026-07-05T14:00:00",
+                                    createdAt: "2026-06-30T09:00:00",
+                                    voiceNote: null,
+                                    attachments: [],
+                                    completedAt: null,
+                                    completedFiles: []
+                                }
+                            ]
+                        },
+                        sha: null
+                    };
+                }
+                return { content: null, sha: null };
+            }
+        }
+
+        // Initialize page
+        window.addEventListener('load', async function() {
+            currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
+            document.getElementById('userInfo').textContent = `خوش آمدید، ${currentUser.name}`;
+            
+            await loadEmployees();
+            await loadTasks();
+            switchTab('employees'); // Default tab
+        });
+
+        // Tab switching
+        function switchTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.add('hidden');
+            });
+
+            // Remove active class from all tabs
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('tab-active');
+            });
+
+            // Show selected tab and mark as active
+            document.getElementById(tabName + 'Tab').classList.remove('hidden');
+            document.querySelector(`[data-tab="${tabName}"]`).classList.add('tab-active');
+
+            // Load data based on tab
+            if (tabName === 'overview') {
+                updateStatistics();
+                renderTasksTable();
+            } else if (tabName === 'createTask') {
+                loadEmployeesInSelect();
+            }
+        }
+
+        // Load employees
+        async function loadEmployees() {
+            const data = await GitHubAPI.getFile('database/users.json');
+            employees = data.content.users.filter(user => user.role === 'employee');
+            renderEmployeesList();
+        }
+        // Render employees list
+        function renderEmployeesList() {
+            const container = document.getElementById('employeesList');
+            container.innerHTML = employees.map(emp => `
+                <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                    <div class="flex items-center">
+                        <div class="bg-blue-100 w-12 h-12 rounded-full flex items-center justify-center ml-4">
+                            <i class="fas fa-user text-blue-600"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-medium text-gray-900">${emp.name}</h3>
+                            <p class="text-sm text-gray-600">${emp.email}</p>
+                            <p class="text-xs text-gray-500">نام کاربری: ${emp.username}</p>
+                        </div>
+                    </div>
+                    <div class="flex space-x-2 space-x-reverse">
+                        <button onclick="editEmployee(${emp.id})" 
+                                class="text-blue-600 hover:text-blue-800 p-2">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button onclick="deleteEmployee(${emp.id})" 
+                                class="text-red-600 hover:text-red-800 p-2">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Load tasks
+        async function loadTasks() {
+            const data = await GitHubAPI.getFile('database/tasks.json');
+            tasks = data.content.tasks || [];
+        }
+
+        // Load employees in select dropdown
+        function loadEmployeesInSelect() {
+            const select = document.getElementById('taskAssignee');
+            select.innerHTML = '<option value="">انتخاب کارمند</option>' +
+                employees.map(emp => `<option value="${emp.id}">${emp.name}</option>`).join('');
+
+            // Also load in filter
+            const filterSelect = document.getElementById('employeeFilter');
+            filterSelect.innerHTML = '<option value="">همه کارمندان</option>' +
+                employees.map(emp => `<option value="${emp.id}">${emp.name}</option>`).join('');
+        }
+
+        // Voice recording functions
+        async function toggleRecording() {
+            const button = document.getElementById('recordButton');
+            const status = document.getElementById('recordingStatus');
+
+            if (!mediaRecorder || mediaRecorder.state === 'inactive') {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorder = new MediaRecorder(stream);
+                    audioChunks = [];
+
+                    mediaRecorder.ondataavailable = event => {
+                        audioChunks.push(event.data);
+                    };
+
+                    mediaRecorder.onstop = () => {
+                        const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                        const audioUrl = URL.createObjectURL(audioBlob);
+                        
+                        // Convert to base64
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                            document.getElementById('audioSource').src = audioUrl;
+                            document.getElementById('audioPreview').classList.remove('hidden');
+                            document.querySelector('#audioPreview audio').load();
+                        };
+                        reader.readAsDataURL(audioBlob);
+
+                        // Stop all tracks
+                        stream.getTracks().forEach(track => track.stop());
+                    };
+
+                    mediaRecorder.start();
+                    startRecordingTimer();
+
+                    button.innerHTML = '<i class="fas fa-stop ml-2 recording-animation"></i>توقف ضبط';
+                    button.className = button.className.replace('bg-red-500 hover:bg-red-600', 'bg-gray-600 hover:bg-gray-700');
+                    status.classList.remove('hidden');
+
+                    // Auto-stop after 2 minutes
+                    setTimeout(() => {
+                        if (mediaRecorder && mediaRecorder.state === 'recording') {
+                            stopRecording();
+                        }
+                    }, 120000);
+
+                } catch (error) {
+                    console.error('خطا در دسترسی به میکروفون:', error);
+                    alert('خطا در دسترسی به میکروفون');
+                }
+            } else {
+                stopRecording();
+            }
+        }
+
+        function startRecordingTimer() {
+            recordingSeconds = 0;
+            recordingTimer = setInterval(() => {
+                recordingSeconds++;
+                const minutes = Math.floor(recordingSeconds / 60);
+                const seconds = recordingSeconds % 60;
+                document.getElementById('recordingTime').textContent = 
+                    `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }, 1000);
+        }
+
+        function stopRecording() {
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                mediaRecorder.stop();
+                clearInterval(recordingTimer);
+                
+                const button = document.getElementById('recordButton');
+                const status = document.getElementById('recordingStatus');
+                
+                button.innerHTML = '<i class="fas fa-microphone ml-2"></i>شروع ضبط';
+                button.className = button.className.replace('bg-gray-600 hover:bg-gray-700', 'bg-red-500 hover:bg-red-600');
+                status.classList.add('hidden');
+            }
+        }
+
+        function clearRecording() {
+            document.getElementById('audioPreview').classList.add('hidden');
+            document.getElementById('audioSource').src = '';
+        }
+        // File handling
+        function handleFileSelect(event) {
+            const files = event.target.files;
+            const container = document.getElementById('attachmentsList');
+            
+            container.innerHTML = '';
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const div = document.createElement('div');
+                div.className = 'flex items-center justify-between bg-gray-50 p-2 rounded mt-2';
+                div.innerHTML = `
+                    <span class="text-sm text-gray-700">
+                        <i class="fas fa-file ml-1"></i>
+                        ${file.name} (${(file.size / 1024).toFixed(1)} KB)
+                    </span>
+                    <button type="button" onclick="removeFile(${i})" class="text-red-600 hover:text-red-800">
+                        <i class="fas fa-times"></i>
+                    </button>
+                `;
+                container.appendChild(div);
+            }
+        }
+
+        function removeFile(index) {
+            const input = document.getElementById('taskAttachments');
+            const dt = new DataTransfer();
+            const files = input.files;
+
+            for (let i = 0; i < files.length; i++) {
+                if (i !== index) {
+                    dt.items.add(files[i]);
+                }
+            }
+            
+            input.files = dt.files;
+            handleFileSelect({ target: input });
+        }
+
+        // Create task form submission
+        document.getElementById('createTaskForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const audioElement = document.querySelector('#audioPreview audio source');
+            const attachments = document.getElementById('taskAttachments').files;
+
+            // Get voice recording if exists
+            let voiceNote = null;
+            if (audioElement && audioElement.src) {
+                try {
+                    const response = await fetch(audioElement.src);
+                    const blob = await response.blob();
+                    const reader = new FileReader();
+                    voiceNote = await new Promise(resolve => {
+                        reader.onloadend = () => resolve(reader.result);
+                        reader.readAsDataURL(blob);
+                    });
+                } catch (error) {
+                    console.error('خطا در پردازش فایل صوتی:', error);
+                }
+            }
+
+            // Process attachments (convert to base64 or URLs)
+            const processedAttachments = [];
+            for (let i = 0; i < attachments.length; i++) {
+                const file = attachments[i];
+                if (file.size <= 1024 * 1024) { // Less than 1MB, convert to base64
+                    const reader = new FileReader();
+                    const base64 = await new Promise(resolve => {
+                        reader.onloadend = () => resolve(reader.result);
+                        reader.readAsDataURL(file);
+                    });
+                    processedAttachments.push({
+                        name: file.name,
+                        type: file.type,
+                        size: file.size,
+                        data: base64
+                    });
+                }
+            }
+
+            const newTask = {
+                id: Date.now(),
+                title: document.getElementById('taskTitle').value,
+                description: document.getElementById('taskDescription').value,
+                assignedTo: parseInt(document.getElementById('taskAssignee').value),
+                createdBy: currentUser.id,
+                priority: document.getElementById('taskPriority').value,
+                status: 'pending',
+                deadline: document.getElementById('taskDeadline').value,
+                createdAt: new Date().toISOString(),
+                voiceNote: voiceNote,
+                attachments: processedAttachments,
+                completedAt: null,
+                completedFiles: []
+            };
+
+            try {
+                const tasksData = await GitHubAPI.getFile('database/tasks.json');
+                tasksData.content.tasks = tasksData.content.tasks || [];
+                tasksData.content.tasks.push(newTask);
+
+                const success = await GitHubAPI.updateFile(
+                    'database/tasks.json',
+                    tasksData.content,
+                    tasksData.sha,
+                    `Add new task: ${newTask.title}`
+                );
+
+                if (success) {
+                    alert('تسک با موفقیت ایجاد شد');
+                    this.reset();
+                    clearRecording();
+                    document.getElementById('attachmentsList').innerHTML = '';
+                    await loadTasks();
+                } else {
+                    alert('خطا در ایجاد تسک');
+                }
+            } catch (error) {
+                console.error('خطا در ایجاد تسک:', error);
+                alert('خطا در ایجاد تسک');
+            }
+        });
+
+        // Statistics and overview functions
+        function updateStatistics() {
+            const now = new Date();
+            let totalCount = tasks.length;
+            let pendingCount = tasks.filter(t => t.status === 'pending').length;
+            let completedCount = tasks.filter(t => t.status === 'completed').length;
+            let overdueCount = tasks.filter(t => {
+                const deadline = new Date(t.deadline);
+                return deadline < now && t.status !== 'completed';
+            }).length;
+
+            document.getElementById('totalTasks').textContent = totalCount;
+            document.getElementById('pendingTasks').textContent = pendingCount;
+            document.getElementById('completedTasks').textContent = completedCount;
+            document.getElementById('overdueTasks').textContent = overdueCount;
+        }
+
+        function renderTasksTable() {
+            const tbody = document.getElementById('tasksTableBody');
+            const now = new Date();
+
+            tbody.innerHTML = tasks.map(task => {
+                const employee = employees.find(emp => emp.id === task.assignedTo);
+                const deadline = new Date(task.deadline);
+                const isOverdue = deadline < now && task.status !== 'completed';
+                
+                const priorityColors = {
+                    low: 'bg-blue-100 text-blue-800',
+                    medium: 'bg-yellow-100 text-yellow-800',
+                    high: 'bg-orange-100 text-orange-800',
+                    urgent: 'bg-red-100 text-red-800'
+                };
+
+                const statusColors = {
+                    pending: 'bg-yellow-100 text-yellow-800',
+                    in_progress: 'bg-blue-100 text-blue-800',
+                    completed: 'bg-green-100 text-green-800'
+                };
+
+                const statusText = {
+                    pending: 'در انتظار',
+                    in_progress: 'در حال انجام',
+                    completed: 'تکمیل شده'
+                };
+
+                const priorityText = {
+                    low: 'کم',
+                    medium: 'متوسط',
+                    high: 'زیاد',
+                    urgent: 'فوری'
+                };
+
+                return `
+                    <tr class="${isOverdue ? 'bg-red-50' : ''}">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">${task.title}</div>
+                            <div class="text-sm text-gray-500">${task.description.substring(0, 50)}...</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            ${employee ? employee.name : 'نامشخص'}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-2 py-1 text-xs font-semibold rounded-full ${priorityColors[task.priority]}">
+                                ${priorityText[task.priority]}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-2 py-1 text-xs font-semibold rounded-full ${isOverdue ? 'bg-red-100 text-red-800' : statusColors[task.status]}">
+                                ${isOverdue ? 'منقضی شده' : statusText[task.status]}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            ${new Intl.DateTimeFormat('fa-IR').format(deadline)}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <button onclick="viewTask(${task.id})" class="text-blue-600 hover:text-blue-900 ml-3">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button onclick="editTask(${task.id})" class="text-green-600 hover:text-green-900 ml-3">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="deleteTask(${task.id})" class="text-red-600 hover:text-red-900">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+        // Filter tasks
+        function filterTasks() {
+            const statusFilter = document.getElementById('statusFilter').value;
+            const employeeFilter = document.getElementById('employeeFilter').value;
+            
+            // This would filter the displayed tasks based on the selected filters
+            // Implementation would filter the tasks array and re-render the table
+            renderTasksTable();
+        }
+
+        // Employee management functions
+        function showAddEmployeeModal() {
+            document.getElementById('addEmployeeModal').classList.remove('hidden');
+            document.getElementById('addEmployeeModal').classList.add('flex');
+        }
+
+        function closeAddEmployeeModal() {
+            document.getElementById('addEmployeeModal').classList.add('hidden');
+            document.getElementById('addEmployeeModal').classList.remove('flex');
+            document.getElementById('addEmployeeForm').reset();
+        }
+
+        document.getElementById('addEmployeeForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const newEmployee = {
+                id: Date.now(),
+                name: document.getElementById('empName').value,
+                username: document.getElementById('empUsername').value,
+                password: document.getElementById('empPassword').value,
+                email: document.getElementById('empEmail').value,
+                role: 'employee'
+            };
+
+            try {
+                const usersData = await GitHubAPI.getFile('database/users.json');
+                usersData.content.users.push(newEmployee);
+
+                const success = await GitHubAPI.updateFile(
+                    'database/users.json',
+                    usersData.content,
+                    usersData.sha,
+                    `Add new employee: ${newEmployee.name}`
+                );
+
+                if (success) {
+                    alert('کارمند جدید با موفقیت افزوده شد');
+                    closeAddEmployeeModal();
+                    await loadEmployees();
+                } else {
+                    alert('خطا در افزودن کارمند');
+                }
+            } catch (error) {
+                console.error('خطا در افزودن کارمند:', error);
+                alert('خطا در افزودن کارمند');
+            }
+        });
+
+        function editEmployee(id) {
+            // Implementation for editing employee
+            console.log('Edit employee:', id);
+        }
+
+        function deleteEmployee(id) {
+            if (confirm('آیا از حذف این کارمند مطمئن هستید؟')) {
+                // Implementation for deleting employee
+                console.log('Delete employee:', id);
+            }
+        }
+
+        // Task management functions
+        function viewTask(id) {
+            const task = tasks.find(t => t.id === id);
+            if (task) {
+                // Implementation for viewing task details
+                console.log('View task:', task);
+            }
+        }
+
+        function editTask(id) {
+            // Implementation for editing task
+            console.log('Edit task:', id);
+        }
+
+        function deleteTask(id) {
+            if (confirm('آیا از حذف این تسک مطمئن هستید؟')) {
+                // Implementation for deleting task
+                console.log('Delete task:', id);
+            }
+        }
+
+        // Logout function
+        function logout() {
+            if (confirm('آیا می‌خواهید از سیستم خارج شوید؟')) {
+                sessionStorage.removeItem('currentUser');
+                localStorage.removeItem('currentUser');
+                window.location.href = '../index.html';
+            }
+        }
+
+        // Set minimum datetime for task deadline
+        document.addEventListener('DOMContentLoaded', function() {
+            const now = new Date();
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+            document.getElementById('taskDeadline').min = now.toISOString().slice(0, 16);
+        });
+    </script>
+</body>
+</html>

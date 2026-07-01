@@ -1,0 +1,31 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "username": "admin",
+      "password": "admin123",
+      "role": "admin",
+      "name": "مدیر سیستم",
+      "email": "admin@company.com",
+      "createdAt": "2026-06-01T09:00:00"
+    },
+    {
+      "id": 2,
+      "username": "employee1",
+      "password": "emp123",
+      "role": "employee",
+      "name": "احمد محمدی",
+      "email": "ahmad@company.com",
+      "createdAt": "2026-06-05T10:00:00"
+    },
+    {
+      "id": 3,
+      "username": "employee2",
+      "password": "emp123",
+      "role": "employee",
+      "name": "فاطمه احمدی",
+      "email": "fateme@company.com",
+      "createdAt": "2026-06-10T11:00:00"
+    }
+  ]
+}

@@ -1,0 +1,92 @@
+{
+  "tasks": [
+    {
+      "id": 1,
+      "title": "بررسی مدارک دانشجویان جدید",
+      "description": "بررسی و تایید مدارک ورودی دانشجویان جدید ترم جاری. لطفاً دقت کنید که تمام مدارک کامل و معتبر باشند و در صورت نقص، با دانشجو تماس گرفته شود.",
+      "assignedTo": 2,
+      "createdBy": 1,
+      "priority": "high",
+      "status": "pending",
+      "deadline": "2026-07-05T14:00:00",
+      "createdAt": "2026-06-30T09:00:00",
+      "voiceNote": null,
+      "attachments": [],
+      "completedAt": null,
+      "completedFiles": [],
+      "checklist": [
+        {
+          "id": 1,
+          "text": "بررسی کارت ملی",
+          "completed": false
+        },
+        {
+          "id": 2,
+          "text": "بررسی مدرک تحصیلی",
+          "completed": false
+        },
+        {
+          "id": 3,
+          "text": "بررسی کارت پایان خدمت",
+          "completed": false
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "id": 2,
+      "title": "آماده‌سازی گزارش ماهانه",
+      "description": "تهیه و ارسال گزارش فعالیت‌های ماه گذشته شامل آمار پذیرش، مشکلات و پیشنهادات بهبود",
+      "assignedTo": 2,
+      "createdBy": 1,
+      "priority": "medium",
+      "status": "in_progress",
+      "deadline": "2026-07-10T17:00:00",
+      "createdAt": "2026-06-28T10:00:00",
+      "voiceNote": null,
+      "attachments": [],
+      "completedAt": null,
+      "completedFiles": [],
+      "checklist": [
+        {
+          "id": 1,
+          "text": "جمع‌آوری داده‌ها",
+          "completed": true
+        },
+        {
+          "id": 2,
+          "text": "تحلیل آماری",
+          "completed": false
+        },
+        {
+          "id": 3,
+          "text": "نوشتن گزارش",
+          "completed": false
+        },
+        {
+          "id": 4,
+          "text": "بررسی نهایی",
+          "completed": false
+        }
+      ],
+      "notes": "داده‌های مربوط به ماه قبل آماده شده"
+    },
+    {
+      "id": 3,
+      "title": "پاسخ به ایمیل‌های دانشجویان",
+      "description": "پاسخ‌دهی به سوالات دانشجویان در خصوص مسائل تحصیلی و اداری",
+      "assignedTo": 3,
+      "createdBy": 1,
+      "priority": "low",
+      "status": "pending",
+      "deadline": "2026-07-03T16:00:00",
+      "createdAt": "2026-06-29T14:00:00",
+      "voiceNote": null,
+      "attachments": [],
+      "completedAt": null,
+      "completedFiles": [],
+      "checklist": [],
+      "notes": ""
+    }
+  ]
+}

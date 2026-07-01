@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>سامانه خدمات دانشجویی - ورود</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Vazirmatn', sans-serif;
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #1E3A8A 0%, #3B82F6 100%);
+        }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen flex items-center justify-center">
+    <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
+        <div class="text-center mb-8">
+            <div class="bg-blue-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fas fa-graduation-cap text-3xl text-blue-600"></i>
+            </div>
+            <h1 class="text-2xl font-bold text-gray-800 mb-2">سامانه خدمات دانشجویی</h1>
+            <p class="text-gray-600">وارد حساب کاربری خود شوید</p>
+        </div>
+
+        <form id="loginForm" class="space-y-6">
+            <div>
+                <label for="username" class="block text-sm font-medium text-gray-700 mb-2">نام کاربری</label>
+                <div class="relative">
+                    <input type="text" id="username" name="username" required
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 pr-10"
+                           placeholder="نام کاربری خود را وارد کنید">
+                    <i class="fas fa-user absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                </div>
+            </div>
+
+            <div>
+                <label for="password" class="block text-sm font-medium text-gray-700 mb-2">رمز عبور</label>
+                <div class="relative">
+                    <input type="password" id="password" name="password" required
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 pr-10"
+                           placeholder="رمز عبور خود را وارد کنید">
+                    <i class="fas fa-lock absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                </div>
+            </div>
+
+            <button type="submit" 
+                    class="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition duration-300 font-medium">
+                <i class="fas fa-sign-in-alt ml-2"></i>
+                ورود به سامانه
+            </button>
+        </form>
+
+        <div id="errorMessage" class="mt-4 text-red-600 text-sm text-center hidden"></div>
+
+        <div class="mt-8 text-center">
+            <div class="text-xs text-gray-500 mb-2">اطلاعات آزمایشی:</div>
+            <div class="text-xs text-gray-600 bg-gray-50 p-2 rounded">
+                مدیر: admin / admin123<br>
+                کارمند: employee1 / emp123
+            </div>
+        </div>
+    </div>
+
+    <script src="./config.js"></script>
+    <script>
+
+        // GitHub API Helper
+        class GitHubAPI {
+            static async getFile(path) {
+                try {
+                    const response = await fetch(`${GITHUB_CONFIG.apiUrl}/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${path}`, {
+                        headers: {
+                            'Authorization': `token ${GITHUB_CONFIG.token}`,
+                            'Accept': 'application/vnd.github.v3+json'
+                        }
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('فایل یافت نشد');
+                    }
+
+                    const data = await response.json();
+                    return JSON.parse(atob(data.content));
+                } catch (error) {
+                    console.error('خطا در دریافت فایل:', error);
+                    // Fallback to local data for demonstration
+                    return this.getFallbackData(path);
+                }
+            }
+
+            static getFallbackData(path) {
+                if (path === 'database/users.json') {
+                    return {
+                        users: [
+                            {
+                                id: 1,
+                                username: "admin",
+                                password: "admin123",
+                                role: "admin",
+                                name: "مدیر سیستم",
+                                email: "admin@company.com"
+                            },
+                            {
+                                id: 2,
+                                username: "employee1",
+                                password: "emp123",
+                                role: "employee",
+                                name: "احمد محمدی",
+                                email: "ahmad@company.com"
+                            },
+                            {
+                                id: 3,
+                                username: "employee2",
+                                password: "emp123",
+                                role: "employee",
+                                name: "فاطمه احمدی",
+                                email: "fateme@company.com"
+                            }
+                        ]
+                    };
+                }
+                return null;
+            }
+        }
+
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const errorDiv = document.getElementById('errorMessage');
+
+            if (!username || !password) {
+                showError('لطفاً نام کاربری و رمز عبور را وارد کنید');
+                return;
+            }
+
+            try {
+                // Show loading state
+                const submitBtn = this.querySelector('button[type="submit"]');
+                const originalText = submitBtn.innerHTML;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin ml-2"></i>در حال ورود...';
+                submitBtn.disabled = true;
+
+                // Get users from GitHub API
+                const usersData = await GitHubAPI.getFile('database/users.json');
+                const user = usersData.users.find(u => u.username === username && u.password === password);
+
+                if (user) {
+                    // Store user session
+                    sessionStorage.setItem('currentUser', JSON.stringify(user));
+                    localStorage.setItem('currentUser', JSON.stringify(user));
+
+                    // Redirect based on role
+                    if (user.role === 'admin') {
+                        window.location.href = './admin/dashboard.html';
+                    } else if (user.role === 'employee') {
+                        window.location.href = './employee/dashboard.html';
+                    }
+                } else {
+                    showError('نام کاربری یا رمز عبور اشتباه است');
+                }
+
+                // Reset button
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+
+            } catch (error) {
+                console.error('خطا در ورود:', error);
+                showError('خطا در اتصال به سرور. لطفاً دوباره تلاش کنید');
+                
+                // Reset button
+                const submitBtn = this.querySelector('button[type="submit"]');
+                submitBtn.innerHTML = '<i class="fas fa-sign-in-alt ml-2"></i>ورود به سامانه';
+                submitBtn.disabled = false;
+            }
+        });
+
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.classList.remove('hidden');
+            
+            setTimeout(() => {
+                errorDiv.classList.add('hidden');
+            }, 5000);
+        }
+
+        // Check if user is already logged in
+        window.addEventListener('load', function() {
+            const currentUser = JSON.parse(sessionStorage.getItem('currentUser') || 'null');
+            if (currentUser) {
+                if (currentUser.role === 'admin') {
+                    window.location.href = './admin/dashboard.html';
+                } else if (currentUser.role === 'employee') {
+                    window.location.href = './employee/dashboard.html';
+                }
+            }
+        });
+    </script>
+</body>
+</html>
