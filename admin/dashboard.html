@@ -477,8 +477,10 @@
         }
 
         // Load employees
+        let usersSha = null;
         async function loadEmployees() {
             const data = await GitHubAPI.getFile('database/users.json');
+            usersSha = data.sha;
             employees = data.content.users.filter(user => user.role === 'employee');
             renderEmployeesList();
         }
@@ -512,8 +514,10 @@
         }
 
         // Load tasks
+        let tasksSha = null;
         async function loadTasks() {
             const data = await GitHubAPI.getFile('database/tasks.json');
+            tasksSha = data.sha;
             tasks = data.content.tasks || [];
         }
 
@@ -661,7 +665,7 @@
 
             // Get voice recording if exists
             let voiceNote = null;
-            if (audioElement && audioElement.src) {
+            if (audioElement && audioElement.src && !audioElement.src.includes('blob:')) {
                 try {
                     const response = await fetch(audioElement.src);
                     const blob = await response.blob();
@@ -707,10 +711,17 @@
                 voiceNote: voiceNote,
                 attachments: processedAttachments,
                 completedAt: null,
-                completedFiles: []
+                completedFiles: [],
+                checklist: [],
+                notes: ""
             };
 
             try {
+                const submitBtn = this.querySelector('button[type="submit"]');
+                const originalText = submitBtn.innerHTML;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin ml-2"></i>در حال ایجاد...';
+                submitBtn.disabled = true;
+
                 const tasksData = await GitHubAPI.getFile('database/tasks.json');
                 tasksData.content.tasks = tasksData.content.tasks || [];
                 tasksData.content.tasks.push(newTask);
@@ -729,11 +740,19 @@
                     document.getElementById('attachmentsList').innerHTML = '';
                     await loadTasks();
                 } else {
-                    alert('خطا در ایجاد تسک');
+                    alert('خطا در ایجاد تسک. لطفاً دوباره تلاش کنید.');
                 }
+
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+
             } catch (error) {
                 console.error('خطا در ایجاد تسک:', error);
-                alert('خطا در ایجاد تسک');
+                alert(`خطا در ایجاد تسک: ${error.message}`);
+                
+                const submitBtn = this.querySelector('button[type="submit"]');
+                submitBtn.innerHTML = '<i class="fas fa-plus ml-2"></i>ایجاد تسک';
+                submitBtn.disabled = false;
             }
         });
 
@@ -857,11 +876,20 @@
                 username: document.getElementById('empUsername').value,
                 password: document.getElementById('empPassword').value,
                 email: document.getElementById('empEmail').value,
-                role: 'employee'
+                role: 'employee',
+                createdAt: new Date().toISOString()
             };
 
             try {
                 const usersData = await GitHubAPI.getFile('database/users.json');
+                
+                // Check if username already exists
+                const usernameExists = usersData.content.users.some(u => u.username === newEmployee.username);
+                if (usernameExists) {
+                    alert('این نام کاربری قبلاً استفاده شده است');
+                    return;
+                }
+
                 usersData.content.users.push(newEmployee);
 
                 const success = await GitHubAPI.updateFile(
@@ -876,11 +904,11 @@
                     closeAddEmployeeModal();
                     await loadEmployees();
                 } else {
-                    alert('خطا در افزودن کارمند');
+                    alert('خطا در افزودن کارمند. لطفاً دوباره تلاش کنید.');
                 }
             } catch (error) {
                 console.error('خطا در افزودن کارمند:', error);
-                alert('خطا در افزودن کارمند');
+                alert(`خطا در افزودن کارمند: ${error.message}`);
             }
         });
 
