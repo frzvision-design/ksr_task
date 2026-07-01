@@ -291,6 +291,14 @@
 
         // GitHub API Helper
         class GitHubAPI {
+            // Helper function to encode UTF-8 to Base64 (supports Persian/Arabic)
+            static utf8ToBase64(str) {
+                const utf8Bytes = new TextEncoder().encode(str);
+                let binary = '';
+                utf8Bytes.forEach(byte => binary += String.fromCharCode(byte));
+                return btoa(binary);
+            }
+
             static async getFile(path) {
                 try {
                     const response = await fetch(`${GITHUB_CONFIG.apiUrl}/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${path}`, {
@@ -314,6 +322,9 @@
 
             static async updateFile(path, content, sha, message) {
                 try {
+                    const jsonString = JSON.stringify(content, null, 2);
+                    const base64Content = this.utf8ToBase64(jsonString);
+
                     const response = await fetch(`${GITHUB_CONFIG.apiUrl}/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${path}`, {
                         method: 'PUT',
                         headers: {
@@ -323,7 +334,7 @@
                         },
                         body: JSON.stringify({
                             message: message,
-                            content: btoa(JSON.stringify(content, null, 2)),
+                            content: base64Content,
                             sha: sha
                         })
                     });
